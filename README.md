@@ -20,6 +20,7 @@ you add `--write`.
 - [Requirements](#requirements)
 - [Tests](#tests)
 - [Uninstall](#uninstall)
+- [License](#license)
 
 ## 5 ways this makes your agents smarter
 
@@ -81,6 +82,10 @@ core/tests/run.sh                # everything
 ```bash
 ./install.sh --uninstall --write
 ```
+
+## License
+
+MIT, see [LICENSE](LICENSE).
 
 Removes only what the installer's own manifest recorded, and restores your original
 `settings.json`.
