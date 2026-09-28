@@ -12,6 +12,15 @@ That's it. No packages to install beyond `bash`, `git` and the python 3.9 that m
 ships. `./install.sh` on its own is a dry run: it prints the full plan and changes nothing until
 you add `--write`.
 
+## Table of Contents
+
+- [5 ways this makes your agents smarter](#5-ways-this-makes-your-agents-smarter)
+- [Layout](#layout)
+- [Writing your own layer](#writing-your-own-layer)
+- [Requirements](#requirements)
+- [Tests](#tests)
+- [Uninstall](#uninstall)
+
 ## 5 ways this makes your agents smarter
 
 1. **It stops the agent before a bad edit lands, not after.** Guards on every tool call block a
