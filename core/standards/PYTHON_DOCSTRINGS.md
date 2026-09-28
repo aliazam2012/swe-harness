@@ -55,43 +55,43 @@ Traditional human-only docstrings answered three questions: what, args, returns.
 ## Required Template
 
 ```python
-def book_load(load: LoadRequest, *, idempotency_key: str) -> BookingResult:
-    """Submit a load to the TMS and persist the booking outcome.
+def submit_order(order: OrderRequest, *, idempotency_key: str) -> OrderResult:
+    """Submit an order to the vendor API and persist the outcome.
 
-    Use when the customer-side validation has passed and the load is
-    ready for vendor commitment. For pre-booking validation only,
-    call ``validate_load`` instead.
+    Use when the customer-side validation has passed and the order is
+    ready for vendor commitment. For pre-submission validation only,
+    call ``validate_order`` instead.
 
     Args:
-        load: Validated load payload. Must have ``equipment_type`` set
-            and at least one stop.
+        order: Validated order payload. Must have ``item_sku`` set
+            and at least one line item.
         idempotency_key: Stable key derived from the customer envelope.
             Reusing the same key returns the prior result without
-            re-submitting to the TMS.
+            re-submitting to the vendor.
 
     Returns:
-        BookingResult with ``vendor_ref`` populated on success. The
-        ``status`` field is one of ``booked``, ``pending_review``,
+        OrderResult with ``vendor_ref`` populated on success. The
+        ``status`` field is one of ``confirmed``, ``pending_review``,
         ``rejected``.
 
     Raises:
-        TMSUnavailable: TMS API returned 5xx or timed out. Retryable.
-        InvalidLoad: Load failed TMS-side validation. Not retryable;
+        VendorUnavailable: Vendor API returned 5xx or timed out. Retryable.
+        InvalidOrder: Order failed vendor-side validation. Not retryable;
             caller must fix the payload.
-        DuplicateBooking: Idempotency key matched a different payload.
+        DuplicateSubmission: Idempotency key matched a different payload.
             Caller bug; do not retry.
 
     Side effects:
-        - Writes one row to ``load_bookings``.
-        - Calls TMS ``POST /v1/loads`` (network).
-        - Emits ``booking.submitted`` event on success.
+        - Writes one row to ``order_submissions``.
+        - Calls vendor ``POST /v1/orders`` (network).
+        - Emits ``order.submitted`` event on success.
 
     Example:
-        >>> result = book_load(load, idempotency_key="env_abc123")
+        >>> result = submit_order(order, idempotency_key="env_abc123")
         >>> result.vendor_ref
-        'TMS-44918'
+        'ORD-44918'
         >>> result.status
-        'booked'
+        'confirmed'
     """
 ```
 
@@ -101,7 +101,7 @@ def book_load(load: LoadRequest, *, idempotency_key: str) -> BookingResult:
 
 ### Summary Line
 
-- One imperative sentence. "Submit a load to the TMS." not "Submits a load."
+- One imperative sentence. "Submit an order to the vendor." not "Submits an order."
 - Fits on one line under 100 characters.
 - Ends with a period.
 - Describes **what the function does**, not how.
@@ -109,7 +109,7 @@ def book_load(load: LoadRequest, *, idempotency_key: str) -> BookingResult:
 
 ### Use When
 
-- Required when the module has more than one function with a similar name or shape (`book_load` vs. `validate_load` vs. `simulate_load`).
+- Required when the module has more than one function with a similar name or shape (`submit_order` vs. `validate_order` vs. `simulate_order`).
 - One short paragraph after the summary line.
 - States the precondition for choosing this function over its siblings.
 - This single section has the largest impact on agent tool selection (per Anthropic's tool-writing research).
@@ -180,12 +180,12 @@ The acceptance test: a reader who clones the repo with no other context must und
 - Optional: a short list of the main exports.
 
 ```python
-"""TMS booking submission and idempotency tracking.
+"""Order submission and idempotency tracking.
 
-Called by the booking route handler after envelope validation. Depends
-on the TMS HTTP client and the ``load_bookings`` table. Owns the
+Called by the order route handler after envelope validation. Depends
+on the vendor HTTP client and the ``order_submissions`` table. Owns the
 idempotency contract: the same ``idempotency_key`` always returns the
-same ``BookingResult`` for the lifetime of the row.
+same ``OrderResult`` for the lifetime of the row.
 """
 ```
 
@@ -203,21 +203,21 @@ same ``BookingResult`` for the lifetime of the row.
 Pydantic models are read by both humans (in IDE tooltips) and agents (extracted into LLM tool schemas, FastAPI OpenAPI docs, JSON Schema). Every field gets a description.
 
 ```python
-class BookingResult(BaseModel):
+class OrderResult(BaseModel):
     vendor_ref: str = Field(
         ...,
         description=(
-            "TMS-issued booking reference. Format: 'TMS-' followed by "
-            "5+ digits. Stable for the life of the booking."
+            "Vendor-issued order reference. Format: 'ORD-' followed by "
+            "5+ digits. Stable for the life of the order."
         ),
     )
-    status: Literal["booked", "pending_review", "rejected"] = Field(
+    status: Literal["confirmed", "pending_review", "rejected"] = Field(
         ...,
         description=(
-            "Outcome of the submission. 'booked' means the TMS accepted "
-            "and assigned a vendor_ref. 'pending_review' means a human "
-            "queue entry was created. 'rejected' means the load failed "
-            "TMS validation; vendor_ref will be empty."
+            "Outcome of the submission. 'confirmed' means the vendor "
+            "accepted and assigned a vendor_ref. 'pending_review' means "
+            "a human queue entry was created. 'rejected' means the order "
+            "failed vendor validation; vendor_ref will be empty."
         ),
     )
 ```
@@ -225,7 +225,7 @@ class BookingResult(BaseModel):
 Rules:
 
 - Use the verbose `description=...` form, never `Field(..., title="...")`.
-- Describe the **value semantics**, not the field name. "Stable for the life of the booking" is signal. "The vendor reference" is noise.
+- Describe the **value semantics**, not the field name. "Stable for the life of the order" is signal. "The vendor reference" is noise.
 - For Literal/Enum fields, document what each value means.
 - Stripe's `stripe-python` library added per-field descriptions on every API model for exactly this reason: IDE tooltips and agent context windows benefit equally.
 
@@ -283,19 +283,19 @@ def parse_vin(raw: str) -> VINComponents:
 def mark_envelope_processed(self, envelope_id: str) -> None:
     """Persist that an envelope has reached terminal state.
 
-    Use when the booking outcome has been written and no further
+    Use when the order outcome has been written and no further
     processing is needed for this envelope. For partial-progress
     checkpoints, call ``record_envelope_step`` instead.
 
     Args:
         envelope_id: Customer envelope identifier. Must already exist
-            in ``load_envelopes``; otherwise the update is a no-op.
+            in ``order_envelopes``; otherwise the update is a no-op.
 
     Raises:
         DBUnavailable: MySQL connection failed. Retryable with backoff.
 
     Side effects:
-        - Updates one row in ``load_envelopes`` (``processed_at = NOW()``).
+        - Updates one row in ``order_envelopes`` (``processed_at = NOW()``).
         - Emits ``envelope.processed`` log line at INFO.
     """
 ```
@@ -303,33 +303,33 @@ def mark_envelope_processed(self, envelope_id: str) -> None:
 ### FastAPI route handler
 
 ```python
-@router.post("/loads", response_model=BookingResult)
-async def create_booking(
-    request: BookingRequest,
-    booking_service: BookingService = Depends(get_booking_service),
-) -> BookingResult:
-    """Accept a load envelope and submit it to the TMS.
+@router.post("/orders", response_model=OrderResult)
+async def create_order(
+    request: OrderRequest,
+    order_service: OrderService = Depends(get_order_service),
+) -> OrderResult:
+    """Accept an order envelope and submit it to the vendor.
 
-    Use when the customer's webhook delivers a new load. Idempotent on
+    Use when the customer's webhook delivers a new order. Idempotent on
     ``request.idempotency_key``; safe for the customer to retry.
 
     Args:
-        request: Validated load envelope from the customer webhook.
-        booking_service: Injected service that owns TMS submission and
+        request: Validated order envelope from the customer webhook.
+        order_service: Injected service that owns vendor submission and
             idempotency tracking.
 
     Returns:
-        BookingResult with the vendor reference and status. HTTP 200 on
+        OrderResult with the vendor reference and status. HTTP 200 on
         all non-error paths (including ``rejected``).
 
     Raises:
         HTTPException 422: Envelope failed Pydantic validation before
             reaching this handler.
-        HTTPException 503: TMS unavailable. Customer should retry.
+        HTTPException 503: Vendor unavailable. Customer should retry.
 
     Side effects:
-        - One row written to ``load_bookings``.
-        - One outbound call to the TMS.
+        - One row written to ``order_submissions``.
+        - One outbound call to the vendor.
     """
 ```
 

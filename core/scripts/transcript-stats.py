@@ -31,7 +31,7 @@ tool. This tool applies the same rule.
 
 Usage:
   python3 transcript-stats.py
-  python3 transcript-stats.py --since 2026-08-01 --project Cursor-Docs
+  python3 transcript-stats.py --since 2026-08-01 --project my-project
   python3 transcript-stats.py --json
 """
 

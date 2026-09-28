@@ -115,16 +115,16 @@ Dimension pack for `PROJECT_AUDIT.md`. Read it only when the audit's scope cover
 
 ### 17. Compliance and Privacy
 
-**Definition.** External obligations the system must meet — data privacy laws (GDPR, CCPA), industry standards (SOC 2, ISO 27001, HIPAA, PCI), customer-specific contractual security requirements (e.g., TJ standalone instance).
+**Definition.** External obligations the system must meet — data privacy laws (GDPR, CCPA), industry standards (SOC 2, ISO 27001, HIPAA, PCI), customer-specific contractual security requirements (e.g., Acme standalone instance).
 
-**Why it matters.** A non-compliant system is a system that can't sell to certain customers. For TJ-class accounts, this is the gate. For agent-handled customer data, GDPR/CCPA are non-optional.
+**Why it matters.** A non-compliant system is a system that can't sell to certain customers. For Acme-class accounts, this is the gate. For agent-handled customer data, GDPR/CCPA are non-optional.
 
 **Gates.**
 
 1. `STANDALONE`. Data classification documented. PII, financial, regulated, public — labeled per field/table. Evidence: classification doc. Source: NIST SSDF PW.5.
 2. `STANDALONE`. Data flow diagram exists. Where data enters, where it's stored, where it leaves, who touches it. Evidence: DFD. Source: NIST + Microsoft SDL Practice 3.
 3. `STANDALONE`. Right-to-delete process defined and tested (GDPR Article 17, CCPA). Evidence: deletion runbook. Source: GDPR + CCPA.
-4. `STANDALONE`. Data residency per customer requirement (e.g., TJ may require US-only). Evidence: infra placement. Source: customer contracts.
+4. `STANDALONE`. Data residency per customer requirement (e.g., Acme may require US-only). Evidence: infra placement. Source: customer contracts.
 5. `STANDALONE`. Audit log retention meets compliance requirement (often 1+ year for SOC 2). Evidence: retention policy. Source: SOC 2.
 6. `STANDALONE`. Vendor risk assessment for every third-party data processor. Evidence: vendor list + DPAs. Source: GDPR.
 7. `BOTH`. Customer-specific compliance requirements met. Scoped: per customer contract. Evidence: contract clause ↔ controls map. Source: project-specific.

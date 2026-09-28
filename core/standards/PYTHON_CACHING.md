@@ -148,7 +148,7 @@ async def clear_cache(cache_name: str):
     if cache_name == "commodities":
         _COMMODITY_CACHE.clear()
     elif cache_name == "addresses":
-        await tms_adapter._address_cache.clear()
+        await vendor_adapter._address_cache.clear()
     return {"status": "cleared", "cache": cache_name}
 ```
 
@@ -177,7 +177,7 @@ In-memory caches are per-process. In multi-instance deployments (ECS, Kubernetes
 
 1. **Acknowledge divergence.** After one instance invalidates, others still serve stale until their own check fires. This is acceptable for reference data that changes infrequently (catalogs, address books).
 2. **Not acceptable for:** session data, locks, counters, or any data where stale reads cause correctness issues. Use Redis or another shared cache for these.
-3. Document the divergence window: "Each instance checks TMS count independently. Worst-case divergence = poll interval (e.g. first-request after deploy)."
+3. Document the divergence window: "Each instance checks vendor call count independently. Worst-case divergence = poll interval (e.g. first-request after deploy)."
 
 ## 10. Concurrency Safety
 

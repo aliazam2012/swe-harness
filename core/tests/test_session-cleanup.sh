@@ -298,7 +298,7 @@ chmod +x "$STUB_DIR/herdr"
 
 # ----------------------------------------------------------- port slots
 #
-# Ports outlive a pane: relay-stack.sh detaches its services, so closing a
+# Ports outlive a pane: a stack's startup script detaches its services, so closing a
 # child's pane leaves its stack running and its ports held. Before this, the
 # close had no idea slots existed and said "nothing to clean up" while a slot
 # stayed allocated.

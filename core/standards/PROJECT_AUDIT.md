@@ -114,7 +114,7 @@ The framework below picks the strictest published bar from each cell, then defin
 Every dimension and every gate within a dimension declares its lens applicability. A gate is one of:
 
 - **STANDALONE**: judged against the universal engineering bar. The spec doesn't matter. Example: "secrets are not in the repo" is STANDALONE; it's true or false regardless of what the project is supposed to do.
-- **SCOPED**: judged against the project's spec (implementation doc, design doc, ADRs, contract, tracker). Example: "the 25-method TMS V3 port roster is implemented per `CHECKLIST-tms-port-methods.md`" is SCOPED; only meaningful in the Acme Phase 1A context.
+- **SCOPED**: judged against the project's spec (implementation doc, design doc, ADRs, contract, tracker). Example: "the 25-method vendor API v3 port roster is implemented per `CHECKLIST-vendor-port-methods.md`" is SCOPED; only meaningful in the Acme Phase 1A context.
 - **BOTH**: has a generic version and a spec-specific version. Audited twice. Example: "idempotency exists" (STANDALONE) and "idempotency uses `email_message_id` per ADR-006" (SCOPED).
 
 The audit runner picks the lens at audit time. The same checklist produces two report shapes:

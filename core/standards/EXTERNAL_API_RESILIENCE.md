@@ -69,7 +69,7 @@ The circuit breaker prevents wasted requests against a service that is known to 
 
 ### Implementation rules
 
-1. **Trip condition.** Define the trip condition based on the service's actual rate limit policy, not a generic threshold. Example: TMS limits 25 4xx responses per 10-minute window. The breaker trips on the first 429 with a lockout matching the window.
+1. **Trip condition.** Define the trip condition based on the service's actual rate limit policy, not a generic threshold. Example: the vendor API limits 25 4xx responses per 10-minute window. The breaker trips on the first 429 with a lockout matching the window.
 2. **Scope.** One breaker per external service (not per endpoint). Rate limits are typically account-wide, not endpoint-specific. Module-level (not instance-level) when the limit is tied to the API key.
 3. **Lockout duration.** Match the service's actual recovery window, plus a small buffer (10-30s). Don't guess. Read the API docs or measure empirically.
 4. **429 is NOT a standard retry.** A 429 means the error budget is exhausted. The correct response is to freeze all requests for the lockout duration, not retry after 2 seconds. The retry utility handles 5xx/network errors. The circuit breaker handles 429.

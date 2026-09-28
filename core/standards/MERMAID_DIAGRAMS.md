@@ -101,7 +101,7 @@ Do NOT use inline ` ```mermaid ` code blocks in report markdown files intended f
 └── report-name_v1.pdf                ← Generated PDF
 ```
 
-- File naming: `diagram_{snake_case_description}_v{N}.mmd` (e.g., `diagram_uc2_drayage_billing_v1.mmd`)
+- File naming: `diagram_{snake_case_description}_v{N}.mmd` (e.g., `diagram_uc2_invoice_billing_v1.mmd`)
 - PNG shares the same base name as the `.mmd`
 - Keep `.mmd` source files — they allow re-rendering if colors or content change
 - **Versioning: NEVER overwrite.** When iterating on a diagram, create `_v2`, `_v3`, etc. Preserve all previous versions. The latest version is the active one; older versions are the history.
@@ -184,7 +184,7 @@ end
 
 ## Workflow Diagram Pattern (Primary)
 
-All process flow and SOP diagrams use this pattern. Reference implementations: `diagram_uc1_claims_sop_v6.mmd` (claims), `diagram_uc2_drayage_billing_v1.mmd` (drayage).
+All process flow and SOP diagrams use this pattern. Reference implementations: `diagram_uc1_returns_flow_v6.mmd` (returns), `diagram_uc2_invoice_billing_v1.mmd` (billing).
 
 ### Structure
 

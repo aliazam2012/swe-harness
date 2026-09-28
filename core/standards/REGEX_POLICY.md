@@ -143,7 +143,7 @@ Python's `re.compile()` caches internally, but module-level compilation makes th
 ```python
 # GOOD: name says what it matches
 _TRACKING_NUMBER_PATTERN = re.compile(r"^1Z[A-Z0-9]{16}$")
-_BOL_REFERENCE_PATTERN = re.compile(r"^[A-Z]{2}\d{8}$")
+_INVOICE_REFERENCE_PATTERN = re.compile(r"^[A-Z]{2}\d{8}$")
 
 # BAD: generic names
 PATTERN = re.compile(r"^1Z[A-Z0-9]{16}$")

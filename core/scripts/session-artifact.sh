@@ -12,8 +12,8 @@
 # finds those from the Herdr sidebar tokens. Register the tab you created for a
 # batch, and every worktree.
 #
-# A slot is a reserved set of ports held by one lane, such as the Relay stack
-# slot that fixes webapp, org agent and product-backend ports. The machine has no
+# A slot is a reserved set of ports held by one lane, such as a stack slot that
+# fixes the frontend, API and worker ports for one batch. The machine has no
 # record of which lane reserved which slot, so an unregistered slot is invisible
 # at close and its ports stay held by a process nobody can attribute. The close
 # does not stop services, because only the tool that started them knows how; it
