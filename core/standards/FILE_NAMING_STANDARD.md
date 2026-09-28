@@ -29,7 +29,7 @@ A file name should tell you **what the file does** before you open it. A scannin
 1. **Type prefix is mandatory** for all new non-project files. The prefix tells you what the file *does*.
 2. **One file, one purpose.** If a name needs two type prefixes, it's two files.
 3. **Folder context carries weight.** A file in `playbooks/` doesn't need "PLAYBOOK" in the name, and a file in a project folder doesn't need the project in the name.
-4. **Never duplicate folder context in the filename.** `playbooks/RUNBOOK-cognito.md` — not `playbooks/COGNITO_PLAYBOOK.md`.
+4. **Never duplicate folder context in the filename.** `playbooks/RUNBOOK-auth-outage.md` — not `playbooks/AUTH_OUTAGE_PLAYBOOK.md`.
 5. **Name the thing, not the format.** `agent-data.md` — not `agent-data-document.md`.
 
 ---
@@ -106,7 +106,7 @@ separate record.
 
 ## Separator Rules
 
-- **Hyphen (`-`)** separates words within a segment: `time-reporting`, `cognito-admin-center`
+- **Hyphen (`-`)** separates words within a segment: `time-reporting`, `admin-portal-login`
 - **Hyphen (`-`)** separates the type prefix from the subject: `REF-time-reporting.md`
 - **Underscore (`_`)** separates major structural segments only: date from subject (`2026-04-09_Reviewer.md`), or in legacy UPPER_SNAKE names
 - **Never use spaces** in filenames
@@ -155,8 +155,8 @@ subject-v1.md, subject-v2.md
 - **Hard max: 50 characters** (excluding extension)
 - If you can't fit it, the name is doing too much. Let the folder path carry context.
 
-**Too long:** `ADMIN_CENTER_COGNITO_PERMISSION_FIX_PLAYBOOK.md` (48 chars)
-**Right:** `RUNBOOK-cognito-admin-center.md` (30 chars) inside `playbooks/`
+**Too long:** `ADMIN_PORTAL_LOGIN_PERMISSION_FIX_ROLLOUT_2_PLAYBOOK.md` (52 chars)
+**Right:** `RUNBOOK-admin-portal-login.md` (26 chars) inside `playbooks/`
 
 ---
 

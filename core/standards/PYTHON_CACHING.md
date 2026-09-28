@@ -129,7 +129,7 @@ async def get_or_fetch(self, key, fetch_fn):
 ```python
 async def lifespan(app):
     try:
-        await warm_commodity_cache(customer_ids=ALLOWED_CUSTOMERS)
+        await warm_catalog_cache(customer_ids=ALLOWED_CUSTOMERS)
     except Exception:
         logger.warning("cache warming failed, will fetch on first request")
     yield
@@ -145,8 +145,8 @@ async def lifespan(app):
 ```python
 @app.post("/admin/cache/clear", dependencies=[Depends(require_admin)])
 async def clear_cache(cache_name: str):
-    if cache_name == "commodities":
-        _COMMODITY_CACHE.clear()
+    if cache_name == "catalog":
+        _CATALOG_CACHE.clear()
     elif cache_name == "addresses":
         await vendor_adapter._address_cache.clear()
     return {"status": "cleared", "cache": cache_name}

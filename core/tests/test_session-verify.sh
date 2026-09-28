@@ -44,7 +44,7 @@ EXIT=0; OUT=$(V check --repo "$REPO" 2>&1) || EXIT=$?
 check "an unverified commit fails" "$EXIT" "1"
 has "and says so plainly" "$OUT" "no local run recorded"
 V record --repo "$REPO" --how "ran the service on localhost:8081 against dev postgres" \
-         --observed "required-items came back 3 on the SO-97001 fixture" >/dev/null
+         --observed "required-items came back 3 on the seed fixture" >/dev/null
 EXIT=0; OUT=$(V check --repo "$REPO" 2>&1) || EXIT=$?
 check "the verified commit passes" "$EXIT" "0"
 has "and echoes what was run" "$OUT" "localhost:8081"
