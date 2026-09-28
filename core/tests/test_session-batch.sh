@@ -22,26 +22,26 @@ check(){ if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (want '$3', got '$2')"; 
 has()  { case "$2" in *"$3"*) ok "$1" ;; *) bad "$1 (missing '$3')" ;; esac; }
 hasnt(){ case "$2" in *"$3"*) bad "$1 (unexpected '$3')" ;; *) ok "$1" ;; esac; }
 b() { "$SCRIPTS/session-batch.sh" "$@"; }
-LOG="$HARNESS_WORKSPACE/sessions/.active/batches/orbit.log"
+LOG="$HARNESS_WORKSPACE/sessions/.active/batches/nova.log"
 
 printf 'open\n'
 EXIT=0; OUT=$(b open 'Orbit' --goal g 2>&1) || EXIT=$?
 check "an invalid batch name is refused" "$EXIT" "1"
-EXIT=0; OUT=$(b open orbit 2>&1) || EXIT=$?
+EXIT=0; OUT=$(b open nova 2>&1) || EXIT=$?
 check "a goal is required" "$EXIT" "2"
-OUT=$(b open orbit --goal "ship the dashboard" 2>&1)
-has "it reports the batch open" "$OUT" "batch orbit open"
+OUT=$(b open nova --goal "ship the dashboard" 2>&1)
+has "it reports the batch open" "$OUT" "batch nova open"
 has "it warns when no exit criteria are set" "$OUT" "no exit criteria"
-EXIT=0; OUT=$(b open orbit --goal x 2>&1) || EXIT=$?
+EXIT=0; OUT=$(b open nova --goal x 2>&1) || EXIT=$?
 check "a duplicate batch is refused" "$EXIT" "1"
 EXIT=0; OUT=$(b brief nosuch api --text x 2>&1) || EXIT=$?
 check "an unknown batch is refused" "$EXIT" "1"
 has "the refusal says how to open one" "$OUT" "session-batch.sh open"
 
 printf 'brief\n'
-b brief orbit api --text "own src/api, branch lane/api" >/dev/null
+b brief nova api --text "own src/api, branch lane/api" >/dev/null
 printf 'multi\nline brief with a | pipe\n' > "$TEST_DIR/brief.txt"
-b brief orbit web --file "$TEST_DIR/brief.txt" >/dev/null
+b brief nova web --file "$TEST_DIR/brief.txt" >/dev/null
 # OPEN, GOAL and two BRIEFs. A two-line brief file that stayed two lines would
 # make this five, so the count is what proves the flattening.
 check "a brief with newlines and pipes stays on one line" "$(grep -c . "$LOG")" "4"
@@ -49,28 +49,28 @@ check "no stray pipe split the brief into extra fields" \
   "$(awk -F'|' '$2=="BRIEF" && NF!=5' "$LOG" | wc -l | tr -d ' ')" "0"
 check "the log still parses into five fields" \
   "$(awk -F'|' 'NF!=5{n++} END{print n+0}' "$LOG")" "0"
-EXIT=0; OUT=$(b brief orbit api --file /nope 2>&1) || EXIT=$?
+EXIT=0; OUT=$(b brief nova api --file /nope 2>&1) || EXIT=$?
 check "an unreadable brief file is refused" "$EXIT" "1"
 
 printf 'state\n'
-EXIT=0; OUT=$(b state orbit api sideways 2>&1) || EXIT=$?
+EXIT=0; OUT=$(b state nova api sideways 2>&1) || EXIT=$?
 check "an invalid state is refused" "$EXIT" "1"
-b state orbit api working >/dev/null
-b state orbit web working --note "waiting on the schema" >/dev/null
-b state orbit api "done" --note "merged" >/dev/null
+b state nova api working >/dev/null
+b state nova web working --note "waiting on the schema" >/dev/null
+b state nova api "done" --note "merged" >/dev/null
 
 printf 'steer\n'
-EXIT=0; OUT=$(b steer orbit --input x --disposition ignore 2>&1) || EXIT=$?
+EXIT=0; OUT=$(b steer nova --input x --disposition ignore 2>&1) || EXIT=$?
 check "an invalid disposition is refused" "$EXIT" "1"
 has "the refusal lists the three dispositions" "$OUT" "amend a brief, add a lane, or quiesce"
-OUT=$(b steer orbit --input "also cover the error path" --disposition amend --lane api 2>&1)
+OUT=$(b steer nova --input "also cover the error path" --disposition amend --lane api 2>&1)
 has "an amend is recorded" "$OUT" "steer recorded: amend"
-OUT=$(b steer orbit --input "drop the web lane, requirements changed" --disposition quiesce 2>&1)
+OUT=$(b steer nova --input "drop the web lane, requirements changed" --disposition quiesce 2>&1)
 has "quiesce tells you to stop and re-plan" "$OUT" "stop the affected lanes and re-plan"
 
 printf 'status is a read-only query\n'
 BEFORE=$(md5 -q "$LOG" 2>/dev/null || md5sum "$LOG" | cut -d' ' -f1)
-OUT=$(b status orbit 2>&1)
+OUT=$(b status nova 2>&1)
 AFTER=$(md5 -q "$LOG" 2>/dev/null || md5sum "$LOG" | cut -d' ' -f1)
 check "reading the status writes nothing" "$BEFORE" "$AFTER"
 has "it folds the goal" "$OUT" "ship the dashboard"
@@ -80,34 +80,34 @@ has "it carries the note" "$OUT" "merged"
 has "it counts the steers" "$OUT" "steers   2"
 
 printf 'the record survives the pane that wrote it\n'
-OUT=$(HERDR_PANE_ID="wB:p9" "$SCRIPTS/session-batch.sh" status orbit 2>&1)
+OUT=$(HERDR_PANE_ID="wB:p9" "$SCRIPTS/session-batch.sh" status nova 2>&1)
 has "another shell reads the goal" "$OUT" "ship the dashboard"
 has "another shell reads the lane state" "$OUT" "api"
 OUT=$(HERDR_PANE_ID="wB:p9" "$SCRIPTS/session-batch.sh" list 2>&1)
-has "another shell lists the batch" "$OUT" "orbit"
+has "another shell lists the batch" "$OUT" "nova"
 
 printf 'append only\n'
 LINES=$(grep -c . "$LOG")
-b note orbit --lane api "one more thing" >/dev/null
+b note nova --lane api "one more thing" >/dev/null
 check "a note appends rather than replacing" "$(grep -c . "$LOG")" "$((LINES + 1))"
 check "the original open event is still there" "$(grep -c '|OPEN|' "$LOG")" "1"
 check "both briefs are still there" "$(grep -c '|BRIEF|' "$LOG")" "2"
 
 printf 'silence is detectable\n'
-EXIT=0; OUT=$(b status orbit --stale 60 2>&1) || EXIT=$?
+EXIT=0; OUT=$(b status nova --stale 60 2>&1) || EXIT=$?
 check "a fresh record passes the stale check" "$EXIT" "0"
 has "it says how fresh" "$OUT" "fresh: last event"
 touch -t 202601010000 "$LOG"
-EXIT=0; OUT=$(b status orbit --stale 60 2>&1) || EXIT=$?
+EXIT=0; OUT=$(b status nova --stale 60 2>&1) || EXIT=$?
 check "a silent record fails the stale check" "$EXIT" "1"
 has "it says the lead may be wedged" "$OUT" "may be wedged"
-EXIT=0; OUT=$(b status orbit --stale abc 2>&1) || EXIT=$?
+EXIT=0; OUT=$(b status nova --stale abc 2>&1) || EXIT=$?
 check "a non-numeric stale window is refused" "$EXIT" "1"
 
 printf 'close\n'
-OUT=$(b close orbit --outcome "shipped, one lane deferred" 2>&1)
-has "it reports the batch closed" "$OUT" "batch orbit closed"
-OUT=$(b status orbit 2>&1)
+OUT=$(b close nova --outcome "shipped, one lane deferred" 2>&1)
+has "it reports the batch closed" "$OUT" "batch nova closed"
+OUT=$(b status nova 2>&1)
 has "status shows it closed" "$OUT" "(closed"
 has "status shows the outcome" "$OUT" "shipped, one lane deferred"
 
@@ -150,7 +150,7 @@ check "a bare status is refused while several are open" "$EXIT" "1"
 
 printf 'check reconciles the record against real state\n'
 # The detective control. It compares state rather than command strings, which is
-# why it caught a slotless lane on the vega run that no pattern rule could see.
+# why it caught a slotless lane on the atlas run that no pattern rule could see.
 CH="$TEST_DIR/check"; mkdir -p "$CH"
 STUB2="$TEST_DIR/stub2"; mkdir -p "$STUB2"
 cat > "$STUB2/herdr" <<'STUBEOF'
@@ -194,7 +194,7 @@ EXIT=0; OUT=$(HARNESS_WORKSPACE="$CH" PATH="$STUB2:$PATH" BATCH_CHECK_GRACE_SECO
 has "past the grace period it does report it" "$OUT" "held for nothing"
 
 printf 'a finished lane whose agent is deliberately still alive\n'
-# On the vega run the lead recorded qa done and kept its agent up to hold a test
+# On the atlas run the lead recorded qa done and kept its agent up to hold a test
 # rig for a later step. The check called that drift, which it is not: the record
 # knows the lane, and the lead chose to keep the agent.
 HARNESS_WORKSPACE="$CH" "$SCRIPTS/session-batch.sh" state recon alpha "done" --note "holding the rig" >/dev/null
@@ -250,7 +250,7 @@ has "an unrecorded child is still caught" "$OUT" "does not know it at all"
 printf '{"result":{"agents":[]}}\n' > "$AGENTS_JSON"
 
 printf 'every lane carries the age of its own last state event\n'
-# A batch-wide `last` says fresh while a lane sits dead. On the vega run one busy
+# A batch-wide `last` says fresh while a lane sits dead. On the atlas run one busy
 # lane kept the record ticking, so nothing looked stale and a quiet lane had to be
 # found by hand. The age is per lane for that reason.
 AG="$TEST_DIR/age"; mkdir -p "$AG"
@@ -318,7 +318,7 @@ EXIT=0; OUT=$(G check drift) || EXIT=$?
 has "a done lane ahead of its upstream is flagged" "$OUT" "commit(s) ahead of"
 
 printf 'a lane recorded working whose agent is idle\n'
-# The vega failure exactly: the child stopped, or asked a question and ended its
+# The atlas failure exactly: the child stopped, or asked a question and ended its
 # turn, and recorded nothing. notify_when_idle cannot cover the second case, and
 # the record cannot cover either, because what failed is what writes the record.
 HARNESS_WORKSPACE="$GD" "$SCRIPTS/session-batch.sh" state drift beta working >/dev/null

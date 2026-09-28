@@ -171,7 +171,7 @@ has "the refusal forbids killing the holder" "$OUT" "do not kill the holder"
 : > "$STUB_BUSY"
 
 printf 'a lane on a branch that already exists\n'
-# The vega run on 2026-08-31 bypassed session-lane because the work was on an
+# The atlas run on 2026-08-31 bypassed session-lane because the work was on an
 # existing feature branch and `up` could only cut a new lane/<name>. A road that
 # does not reach the destination gets driven around.
 git -C "$REPO" branch -q feature/existing

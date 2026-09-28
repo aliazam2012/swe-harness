@@ -368,7 +368,7 @@ render() {
 #
 # This is the detective half of the controls, and it is stronger than the rule
 # watcher for one reason: it compares state rather than command strings. It does
-# not care how a lane came to have no slot, only that it has none. The vega run on
+# not care how a lane came to have no slot, only that it has none. The atlas run on
 # 2026-08-31 produced exactly that case, and no pattern rule caught it because the
 # worktree was made a way the patterns did not spell.
 #
@@ -447,7 +447,7 @@ for a in d.get("result", {}).get("agents", []):
   # "No brief yet" is a different problem from "the record has never heard of it",
   # and reporting the first as the second sends you looking in the wrong place.
   # Every lane the record has ever heard of, whatever state it ended in. A lane
-  # recorded done whose agent is deliberately still alive is not drift: on the vega
+  # recorded done whose agent is deliberately still alive is not drift: on the atlas
   # run the lead finished qa and kept it holding the rig on purpose. Only a child
   # the record has never mentioned is worth reporting.
   local known=""
@@ -490,7 +490,7 @@ for a in d.get("result", {}).get("agents", []):
   # cleaned away: session-cleanup.sh refuses to remove such a checkout, so the
   # batch reads finished while the change exists nowhere but this machine.
   #
-  # A lane recorded working whose agent is idle is the vega failure exactly. The
+  # A lane recorded working whose agent is idle is the atlas failure exactly. The
   # child stopped, or asked a question and ended its turn, and recorded nothing.
   # notify_when_idle cannot cover the second case and the record cannot cover
   # either, because the thing that failed is the thing that writes the record.

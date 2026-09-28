@@ -276,7 +276,7 @@ rather than discovering this after the wait.
 Give the child the same name in both systems, so one string addresses it everywhere:
 
 ```bash
-herdr agent start vega-front-client --kind claude --pane wM:p4 -- --name vega-front-client
+herdr agent start atlas-front-client --kind claude --pane wM:p4 -- --name atlas-front-client
 ```
 
 The trailing `-- --name <name>` is what makes `SendMessage` work by that name. Without it Claude Code
@@ -302,7 +302,7 @@ a normal inbox socket, so the lead reaches it by name:
 **`notify_when_idle` cannot tell you a child is stuck.** It fires when a session finishes its turn,
 and a child sitting at a question or an approval has not finished its turn, so the notice never
 comes. A lead relying on it alone will wait forever on a child that is waiting on it. This is not
-theoretical: on the vega run of 2026-08-31 two lanes recorded themselves blocked with precise reasons,
+theoretical: on the atlas run of 2026-08-31 two lanes recorded themselves blocked with precise reasons,
 the lead did not notice, and the operator had to tell it to go unblock its own child.
 
 **And an idle notice means stopped, not finished.** A child that asks a question and ends its turn
