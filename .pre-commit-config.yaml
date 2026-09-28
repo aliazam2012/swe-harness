@@ -1,0 +1,45 @@
+# Contributor tooling only. It is never needed to INSTALL or USE this harness:
+# the dependency floor in core/CONTRACT.md covers users, not authors.
+#
+#   pre-commit install
+#
+# Core ships a guard that blocks `git commit --no-verify`, so these hooks are
+# not something a contributor can quietly skip.
+repos:
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-json
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=512']
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-executables-have-shebangs
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.10.0
+    hooks:
+      - id: shellcheck
+        args: ['--severity=warning', '--exclude=SC1091']
+
+  - repo: local
+    hooks:
+      - id: core-purity
+        name: core purity gate
+        entry: core/tests/test-core-purity.py
+        language: system
+        pass_filenames: false
+        # The one check that decides whether core can be published. It runs on
+        # every commit because a name is cheapest to remove before it is pushed.
+        always_run: true

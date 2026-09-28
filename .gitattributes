@@ -1,0 +1,13 @@
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.pdf binary
+*.gz  binary
+*.zip binary
+
+# Generated or ported in bulk: keep them out of the diff summary so a review
+# shows the change that matters.
+docs/PORT-*.md   linguist-documentation
+docs/AUDIT-*.md  linguist-documentation

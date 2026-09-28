@@ -1,0 +1,11 @@
+# Resolved for this machine by install.sh. Never committed: it is the one file
+# that is allowed to hold local absolute paths.
+harness.config.json
+
+# Installer leavings
+*.harness-bak-*
+*.harness-tmp
+
+__pycache__/
+*.pyc
+.DS_Store

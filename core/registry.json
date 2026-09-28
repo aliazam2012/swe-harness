@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "notes": "Core hooks. Path-neutral by contract: a 'command' or an absolute 'script' is rejected by core/lib/layers.py. install.py resolves 'runner' plus 'script' into an absolute command at write time. See core/CONTRACT.md. Profiles: minimal keeps every control that stops a wrong or unsafe write and drops everything whose only job is to add context, record narrative, or drive a pane. standard is the full wiring. strict is standard plus per-call telemetry.",
+  "hooks": [
+    {
+      "id": "sessionstart-inject",
+      "description": "Creates this session's journal and prints only a real anomaly, so a normal start injects nothing.",
+      "event": "SessionStart",
+      "matcher": null,
+      "runner": "python3",
+      "script": "hooks/sessionstart-inject.py",
+      "timeout": 5,
+      "profiles": ["standard", "strict"],
+      "mandatory": false
+    },
+    {
+      "id": "session-lifecycle-start",
+      "description": "Opens the harness session journal at start. Silent when the session scripts are not installed.",
+      "event": "SessionStart",
+      "matcher": null,
+      "runner": "bash",
+      "script": "hooks/session-lifecycle.sh",
+      "timeout": 10,
+      "profiles": ["standard", "strict"],
+      "mandatory": false
+    },
+    {
+      "id": "herdr-agent-state",
+      "description": "Reports this agent's session to Herdr, so a child pane stays addressable and its status stays true. Silent outside Herdr.",
+      "event": "SessionStart",
+      "matcher": null,
+      "runner": "bash",
+      "script": "hooks/herdr-agent-state.sh",
+      "timeout": 10,
+      "profiles": ["minimal", "standard", "strict"],
+      "mandatory": false
+    },
+    {
+      "id": "herdr-lineage",
+      "description": "Tags this pane as a lead or as a child of a named parent pane, for the agent sidebar. Silent outside Herdr.",
+      "event": "SessionStart",
+      "matcher": null,
+      "runner": "bash",
+      "script": "hooks/herdr-lineage.sh",
+      "timeout": 10,
+      "profiles": ["standard", "strict"],
+      "mandatory": false
+    },
+    {
+      "id": "herdr-sticky-prompt",
+      "description": "Pins a one-line version of the last prompt in this agent's Herdr pane border. Silent outside Herdr.",
+      "event": "UserPromptSubmit",
+      "matcher": null,
+      "runner": "python3",
+      "script": "hooks/herdr-sticky-prompt.py",
+      "timeout": 10,
+      "profiles": ["standard", "strict"],
+      "mandatory": false
+    },
+    {
+      "id": "write-guards",
+      "description": "Runs the Write, Edit and MultiEdit guards in one process. config_protection blocks an edit that weakens a linter, formatter or type checker, which CI cannot catch because the config change arrives with the code it excuses and CI then obeys it.",
+      "event": "PreToolUse",
+      "matcher": "Write|Edit|MultiEdit",
+      "runner": "python3",
+      "script": "hooks/pretooluse-dispatcher.py",
+      "timeout": 10,
+      "profiles": ["standard", "strict"],
+      "mandatory": false
+    },
+    {
+      "id": "bash-guards",
+      "description": "Runs the Bash guards in one process. no_verify blocks a git command that switches off the pre-commit and pre-push hooks, which is how an unscanned credential reaches history.",
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "runner": "python3",
+      "script": "hooks/pretooluse-dispatcher.py",
+      "timeout": 10,
+      "profiles": ["minimal", "standard", "strict"],
+      "mandatory": false
+    },
+    {
+      "id": "python-lint",
+      "description": "Runs ruff, mypy and any configured extra checks after every Python write, and feeds the findings back.",
+      "event": "PostToolUse",
+      "matcher": "Write|Edit|MultiEdit",
+      "runner": "python3",
+      "script": "hooks/posttooluse-python-lint.py",
+      "timeout": 70,
+      "profiles": ["minimal", "standard", "strict"],
+      "mandatory": false
+    },
+    {
+      "id": "session-lifecycle-precompact",
+      "description": "Checkpoints the session journal before a compaction drops the context it came from.",
+      "event": "PreCompact",
+      "matcher": null,
+      "runner": "bash",
+      "script": "hooks/session-lifecycle.sh",
+      "timeout": 10,
+      "profiles": ["standard", "strict"],
+      "mandatory": false
+    },
+    {
+      "id": "done-gate",
+      "description": "Blocks a hand-off whose turn used a tool and carries no Verified and Gaps footer.",
+      "event": "Stop",
+      "matcher": null,
+      "runner": "python3",
+      "script": "hooks/stop-done-gate.py",
+      "timeout": 15,
+      "profiles": ["minimal", "standard", "strict"],
+      "mandatory": true,
+      "mandatory_reason": "The moment the definition of done is enforced. It already has one named escape hatch, DONE_GATE_DISABLE, which the machine owner sets deliberately; a second route out through a profile would make that decision invisible."
+    },
+    {
+      "id": "harness-bench-gate",
+      "description": "Blocks a hand-off from a session that changed a hook, the generated settings or a registry without a benchmark run describing the change. Reads a recorded run rather than running the benchmark, which takes minutes; the same shape as a gate that reads a recorded verification.",
+      "event": "Stop",
+      "matcher": null,
+      "runner": "python3",
+      "script": "hooks/stop-harness-bench-gate.py",
+      "timeout": 15,
+      "profiles": ["standard", "strict"],
+      "mandatory": false
+    },
+    {
+      "id": "herdr-lineage-status-stop",
+      "description": "Relabels a parent that is done while a child still runs, so it reads as waiting rather than free. Silent outside Herdr.",
+      "event": "Stop",
+      "matcher": null,
+      "runner": "python3",
+      "script": "hooks/herdr-lineage-status.py",
+      "timeout": 15,
+      "profiles": ["standard", "strict"],
+      "mandatory": false
+    },
+    {
+      "id": "session-lifecycle-end",
+      "description": "Auto-wraps a session that ended without the wrap script, so the journal is never lost.",
+      "event": "SessionEnd",
+      "matcher": null,
+      "runner": "bash",
+      "script": "hooks/session-lifecycle.sh",
+      "timeout": 30,
+      "profiles": ["standard", "strict"],
+      "mandatory": false
+    },
+    {
+      "id": "herdr-lineage-status-sessionend",
+      "description": "Reconciles every agent pane's lineage label when this session ends. Silent outside Herdr.",
+      "event": "SessionEnd",
+      "matcher": null,
+      "runner": "python3",
+      "script": "hooks/herdr-lineage-status.py",
+      "timeout": 15,
+      "profiles": ["standard", "strict"],
+      "mandatory": false
+    }
+  ]
+}

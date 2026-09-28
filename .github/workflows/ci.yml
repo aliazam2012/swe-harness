@@ -1,0 +1,152 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  purity:
+    # The release gate. Core is meant to be publishable, so a company name or an
+    # absolute path reaching core is a build failure, not a review comment.
+    name: core purity gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: core must be clean on its own terms
+        run: python3 core/tests/test-core-purity.py
+
+  tests:
+    name: tests (${{ matrix.os }}, python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.9 is the floor the contract promises and the version macOS ships.
+        # The newest is there to catch a deprecation before it reaches anyone.
+        os: [ubuntu-latest, macos-latest]
+        python: ['3.9', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: suite
+        run: bash core/tests/run.sh
+
+  install:
+    # Proves the claim the README makes: clone, one command, working harness,
+    # with nothing installed. A sandbox HOME, never the runner's real one.
+    name: fresh clone installs (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: install core into a sandbox home, then undo it
+        run: |
+          set -euo pipefail
+          SANDBOX="$RUNNER_TEMP/sandbox"
+          mkdir -p "$SANDBOX"
+          # Driven by the pinned interpreter, not by the bootstrap's own
+          # search. install.sh deliberately prefers a real python over an
+          # active virtualenv, so on a runner it can pick one the matrix did
+          # not choose, and the version pin above would prove nothing.
+          HOME="$SANDBOX" HARNESS_HOME="$PWD" python3 core/lib/install.py --write
+          HOME="$SANDBOX" python3 - <<'PY'
+          import json, os, pathlib, sys
+          settings = pathlib.Path(os.environ["HOME"]) / ".claude" / "settings.json"
+          data = json.loads(settings.read_text())
+          commands = [h["command"] for ev in data["hooks"].values() for b in ev for h in b["hooks"]]
+          assert commands, "no hooks were written"
+          clone = str(pathlib.Path.cwd())
+          stray = [c for c in commands if clone not in c]
+          assert not stray, "hook command does not point into the clone: %s" % stray[:2]
+          for command in commands:
+              script = command.split(" ", 1)[1]
+              assert pathlib.Path(script).is_file(), "hook script missing: %s" % script
+          print("ok: %d hooks, all resolved into the clone" % len(commands))
+          PY
+          HOME="$SANDBOX" HARNESS_HOME="$PWD" python3 core/lib/install.py --uninstall --write
+          test ! -f "$SANDBOX/.claude/settings.json" || {
+            echo "uninstall left settings.json behind" >&2; exit 1; }
+
+      - name: the bootstrap itself must also work end to end
+        run: |
+          set -euo pipefail
+          SANDBOX="$RUNNER_TEMP/sandbox-bootstrap"
+          mkdir -p "$SANDBOX"
+          HOME="$SANDBOX" ./install.sh --write
+          HOME="$SANDBOX" ./install.sh --write
+          HOME="$SANDBOX" ./install.sh --uninstall --write
+          # A second --write once made uninstall restore the harness instead of
+          # removing it, because the manifest recorded the last run rather than
+          # the state before the first install. This step ran that exact
+          # sequence and asserted nothing, so it stayed green.
+          test ! -f "$SANDBOX/.claude/settings.json" || {
+            echo "uninstall after a repeat install left settings.json behind" >&2
+            cat "$SANDBOX/.claude/settings.json" >&2; exit 1; }
+
+      - name: a settings.json that is a symlink must survive, and restore
+        run: |
+          set -euo pipefail
+          SANDBOX="$RUNNER_TEMP/sandbox-symlink"
+          mkdir -p "$SANDBOX/.claude" "$SANDBOX/dotfiles"
+          # How ~/.claude/settings.json is set up on a normal machine: a link
+          # into a dotfiles repository. The backup used to copy the link rather
+          # than its content, so the original was destroyed and uninstall then
+          # failed partway through.
+          printf '{"permissions":{"deny":["Bash(rm -rf /)"]}}\n' > "$SANDBOX/dotfiles/settings.json"
+          cp "$SANDBOX/dotfiles/settings.json" "$RUNNER_TEMP/expected.json"
+          ln -s "$SANDBOX/dotfiles/settings.json" "$SANDBOX/.claude/settings.json"
+          HOME="$SANDBOX" ./install.sh --write
+          HOME="$SANDBOX" ./install.sh --uninstall --write
+          test -L "$SANDBOX/.claude/settings.json" || {
+            echo "the user's symlink was replaced by a real file" >&2; exit 1; }
+          diff "$RUNNER_TEMP/expected.json" "$SANDBOX/dotfiles/settings.json" || {
+            echo "the linked file was not restored to its original content" >&2; exit 1; }
+
+      - name: a malformed layer must produce a message, not a traceback
+        run: |
+          set -euo pipefail
+          SANDBOX="$RUNNER_TEMP/sandbox-broken"
+          mkdir -p "$SANDBOX/.claude" layers/ci-broken
+          echo '{not json' > layers/ci-broken/layer.json
+          set +e
+          OUT="$(HOME="$SANDBOX" ./install.sh --layers ci-broken 2>&1)"
+          CODE=$?
+          set -e
+          rm -rf layers/ci-broken
+          test "$CODE" -ne 0 || { echo "a broken layer exited 0" >&2; exit 1; }
+          case "$OUT" in
+            *Traceback*) echo "a broken layer produced a traceback:" >&2
+                         echo "$OUT" >&2; exit 1 ;;
+          esac
+          echo "$OUT"
+
+  shell:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: lint every shell file
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          # SC1091: sourced files are resolved at run time from the clone root.
+          find . -name '*.sh' -not -path './.git/*' -print0 \
+            | xargs -0 shellcheck --severity=warning --exclude=SC1091

@@ -1,0 +1,95 @@
+onboarding = false
+# herdr: agent multiplexer. Panes, tabs, workspaces, and the agent list.
+#
+# herdr owns panes. WezTerm keeps only window, font, and theme, so the two do
+# not fight over the same keys.
+#
+# Bindings match tmux, because that muscle memory already exists.
+# Validate this file with: herdr config check
+# Apply it to a running server with: herdr server reload-config
+
+[keys]
+prefix = "ctrl+b"
+
+focus_pane_left  = "prefix+h"
+focus_pane_down  = "prefix+j"
+focus_pane_up    = "prefix+k"
+focus_pane_right = "prefix+l"
+
+split_horizontal = "prefix+double_quote"
+split_vertical   = "prefix+percent"
+
+new_tab   = "prefix+c"
+close_tab = "prefix+ampersand"
+
+workspace_picker = "prefix+w"
+goto             = "prefix+g"
+
+# copy-mode's own internal keys (v/space select, y/Enter copy, q/Esc cancel)
+# are not configurable
+copy_mode = "prefix+y"
+
+[ui]
+# Group the agents panel by workspace, so one repo's agents stay together.
+agent_panel_sort = "spaces"
+
+# Show a label in each split pane border. Agent panes use the detected agent
+# label; other panes use the name set with `herdr pane rename <id> <name>`.
+show_agent_labels_on_pane_borders = true
+
+# Distinct glyphs per agent state, not just color dots.
+status_indicators = "symbols"
+
+# Wider sidebar so the task title has room.
+sidebar_width = 30
+
+# Notify through the macOS notification service, so alerts land even when
+# Herdr is not the front window. delay_seconds waits before firing, so an
+# agent that finishes a step and keeps going does not spam.
+[ui.toast]
+delivery = "system"
+delay_seconds = 3
+
+# Agent rows: state, where it lives, and the actual task title.
+[ui.sidebar.agents]
+rows = [
+  ["state_icon", { token = "state_text", bold = true }, "workspace", "tab"],
+  ["terminal_title_stripped"],
+]
+
+# Claude rows add the lineage marker. A lineage hook sets $role to an arrow plus
+# the parent's pane suffix, and clears it on panes a person started, so a lead
+# carries no marker. Row two shows each pane's own id, so the id a child
+# points at resolves by eye even when the two rows are far apart.
+[ui.sidebar.agents.rows_by_agent]
+claude = [
+  [{ token = "$role", fg = "#f9e2af", bold = true }, "state_icon", { token = "state_text", bold = true }, "workspace", "tab"],
+  [{ token = "pane", dim = true }, "terminal_title_stripped"],
+]
+
+# Two popup bindings are left commented out because Herdr does not expand a
+# variable inside `command`: the value has to be a real path on this machine,
+# and a real path is exactly what this repository may not store. Uncomment each
+# one and put your own clone path where <HARNESS_HOME> is.
+#
+# The pane border shows one line of the last input. This opens the full text for
+# the focused pane, which the sticky-prompt hook and the shell preexec hook
+# record under ~/.local/state/herdr/last-input/.
+#
+# [[keys.command]]
+# key = "prefix+alt+p"
+# type = "popup"
+# command = "<HARNESS_HOME>/core/hooks/herdr-sticky-show.sh"
+# width = "80%"
+# height = "50%"
+
+# Emergency stop for an orchestrated batch. A popup, not a shell command, so the
+# result is visible. Bound in Herdr rather than driven by an agent on purpose:
+# a stop that runs through the lead cannot stop a lead that is wedged.
+#
+# [[keys.command]]
+# key = "prefix+alt+k"
+# type = "popup"
+# command = '<HARNESS_HOME>/core/scripts/session-lane.sh down --all; printf "\n-- press any key --"; read -n 1'
+# width = "80%"
+# height = "60%"
