@@ -192,7 +192,7 @@ All process flow and SOP diagrams use this pattern. Reference implementations: `
 2. **Outer `main` subgraph** — wraps everything, provides border and title
 3. **Phase subgraphs** — one per step (e.g., "Step A: Invoice Receipt"), each with `direction TB` so internal nodes stack vertically
 4. **Decision diamonds** — `{" question? "}` at gate points within phases
-5. **Nested detail subgraphs** — for grouped items (rate sheets, accessorial checks, doc types) with dashed borders
+5. **Nested detail subgraphs** — for grouped items (rate sheets, surcharge checks, doc types) with dashed borders
 6. **Cross-phase connections** — defined after all subgraphs, inside `main`
 
 ### Frontmatter for Workflow Diagrams

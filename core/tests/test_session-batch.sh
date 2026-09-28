@@ -25,7 +25,7 @@ b() { "$SCRIPTS/session-batch.sh" "$@"; }
 LOG="$HARNESS_WORKSPACE/sessions/.active/batches/nova.log"
 
 printf 'open\n'
-EXIT=0; OUT=$(b open 'Orbit' --goal g 2>&1) || EXIT=$?
+EXIT=0; OUT=$(b open 'Nova' --goal g 2>&1) || EXIT=$?
 check "an invalid batch name is refused" "$EXIT" "1"
 EXIT=0; OUT=$(b open nova 2>&1) || EXIT=$?
 check "a goal is required" "$EXIT" "2"

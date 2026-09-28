@@ -98,7 +98,7 @@ separate record.
 | **Project standard files** | UPPER_SNAKE (no prefix) | `PROJECT_SUMMARY.md`, `KEY_INSIGHTS.md` |
 | **Convention files** | UPPER_SNAKE (no prefix) | `README.md`, `PROFILE.md`, `TODO.md` |
 | **Scripts** | kebab-case | `ticket-reader.py`, `get-secret.sh` |
-| **Folders** | kebab-case for tasks, PascalCase or descriptive for top-level | `Architecture/`, `shipment-updates/` |
+| **Folders** | kebab-case for tasks, PascalCase or descriptive for top-level | `Architecture/`, `billing-updates/` |
 
 **Why two conventions?** Project standard files (`PROJECT_SUMMARY.md`, `KEY_INSIGHTS.md`, `SESSION_HISTORY.md`) are a repeating pattern across every project folder — they're structural, not content-typed. They stay UPPER_SNAKE because they're the same file in every project. Everything else uses type prefix + kebab-case because the prefix already signals intent.
 
@@ -168,7 +168,7 @@ subject-v1.md, subject-v2.md
 | **Subfolders (organizational)** | lowercase kebab or snake | `reference/`, `playbooks/`, `shared/`, `internal/` |
 | **Type-based subfolders** | lowercase, short | `scope/`, `rcas/`, `impl/`, `audits/`, `uat/`, `platform/`, `references/`, `usecases/` |
 | **Project folders** | repo name, as it is | `payments-api/`, `ingest-worker/` |
-| **Task folders** | ticket key or kebab-case | `PROJ-123-column-widths/`, `shipment-updates/` |
+| **Task folders** | ticket key or kebab-case | `PROJ-123-column-widths/`, `billing-updates/` |
 
 ---
 

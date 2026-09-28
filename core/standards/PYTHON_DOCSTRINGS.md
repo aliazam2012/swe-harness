@@ -160,8 +160,8 @@ def submit_order(order: OrderRequest, *, idempotency_key: str) -> OrderResult:
 | Type repeats: ``param (str): description`` | Type hint already says it. Noise. |
 | Implementation narration: "Loops through items and calls X" | The agent reads the body. The docstring is the contract. |
 | Trivial restatements: ``"""Return the name."""`` for ``@property def name`` | Adds zero information. Drop the docstring. |
-| History: "Renamed from ``submit_load``", "Previously used the V1 API" | Agents trip on stale history. Use git blame for history. |
-| Roadmap: "Will add LTL support in S04", "Lands in Phase 1A" | Stale within weeks. Tracker is the source of truth, not the code. |
+| History: "Renamed from ``submit_request``", "Previously used the V1 API" | Agents trip on stale history. Use git blame for history. |
+| Roadmap: "Will add bulk support in S04", "Lands in Phase 1A" | Stale within weeks. Tracker is the source of truth, not the code. |
 | Project step IDs: ``S04``, ``R17`` | Internal-only references that mean nothing to the cloned repo. |
 | Project lifecycle labels: ``Phase 1A``, ``MVP`` | Same reason. |
 | External doc paths: a path into a notes repository, or a document that lives outside this checkout | The repo must be self-contained. |

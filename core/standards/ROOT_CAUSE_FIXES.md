@@ -55,7 +55,7 @@ Mechanism-> the line, the missing guard, the wrong assumption, the race
 Origin   -> why that line is like that (a bad default, a stale contract, a copy-paste)
 ```
 
-The mechanism is the sentence you must be able to say. "The parser assumes the carrier always returns a delivery date, and this carrier omits it on a cancelled shipment" is a mechanism. "The date was null" is a symptom restated.
+The mechanism is the sentence you must be able to say. "The parser assumes the vendor always returns a delivery date, and this vendor omits it on a cancelled order" is a mechanism. "The date was null" is a symptom restated.
 
 Stop at the first cause you can act on and that explains every observation you have. Do not keep asking "why" until you reach the company's hiring policy. A cause you cannot act on is context for the report, not the fix.
 
@@ -193,4 +193,4 @@ Scope: <one instance, or the class; what the sweep found>.
 Guard: <the test or type that stops it coming back>.
 ```
 
-"Fixed the null check" says nothing a reader can verify. "The carrier client returned None for a cancelled shipment because the response schema marks `delivered_at` optional; the client now maps it to an explicit `CancelledShipment` rather than a bare None, and the two other call sites that assumed a date are updated" is the same fix, reported so somebody can check it.
+"Fixed the null check" says nothing a reader can verify. "The vendor client returned None for a cancelled order because the response schema marks `delivered_at` optional; the client now maps it to an explicit `CancelledOrder` rather than a bare None, and the two other call sites that assumed a date are updated" is the same fix, reported so somebody can check it.
