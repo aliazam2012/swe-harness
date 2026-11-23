@@ -1,6 +1,6 @@
 # swe-harness
 
-A Claude Code harness that installs in one command and works on any machine. No dependency on
+A harness for Claude Code and Codex that installs in one command and works on any machine. No dependency on
 any company: `core/` names nobody, and a test enforces that before it ships.
 
 ```bash
@@ -16,6 +16,7 @@ you add `--write`.
 
 - [5 ways this makes your agents smarter](#5-ways-this-makes-your-agents-smarter)
 - [Layout](#layout)
+- [Codex](#codex)
 - [Writing your own layer](#writing-your-own-layer)
 - [Requirements](#requirements)
 - [Tests](#tests)
@@ -54,6 +55,17 @@ core/
 layers/
   example/                 copy this to add your own rules on top
 ```
+
+## Codex
+
+`./install.sh --codex --write` also installs into Codex CLI, next to Claude Code:
+
+- **Skills** are linked into `~/.agents/skills`, where Codex finds them (same `SKILL.md` format).
+- **Hooks** are merged into `~/.codex/hooks.json` (or `$CODEX_HOME/hooks.json`). Entries you or other tools put there stay as they are; uninstall removes only the harness's own.
+- **What runs on Codex:** the session-start context, the shell guards (such as the `--no-verify` block), the config-file protection, and the Python lint on every edited `.py` file. Codex reports each file edit as one `apply_patch` call, so `core/hooks/codex_patch.py` splits the patch into one call per file and the same guards judge each.
+- **What does not, yet:** the done gate and the session lifecycle hooks. They read the conversation transcript, and Codex documents its transcript format as unstable.
+
+Codex asks you to trust new hooks the first time it sees them.
 
 ## Writing your own layer
 

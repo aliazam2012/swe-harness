@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional, Tuple
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import harness_config as cfg  # noqa: E402
+import install_codex  # noqa: E402
 import layers as layer_lib  # noqa: E402
 
 CREDENTIAL = re.compile(
@@ -297,6 +298,19 @@ def apply_links(links: List[Dict[str, str]], write: bool) -> List[Dict[str, str]
     return owned
 
 
+def write_codex_hooks(codex_hooks: Dict[str, List[Dict[str, Any]]], home: Path) -> Path:
+    """Merge this clone's hooks into Codex's hooks.json, keeping every other entry."""
+    target = install_codex.hooks_file()
+    existing: Dict[str, Any] = {}
+    if target.is_file():
+        existing = json.loads(target.read_text() or "{}")
+        backup(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    merged = install_codex.merge(existing, codex_hooks, str(home))
+    target.write_text(json.dumps(merged, indent=2) + "\n")
+    return target
+
+
 def read_manifest(home: Path) -> Dict[str, Any]:
     path = cfg.workspace(home) / MANIFEST_NAME
     if not path.is_file():
@@ -374,6 +388,14 @@ def uninstall(home: Path, write: bool) -> int:
     else:
         print("No settings backup recorded. %s left as it is." % SETTINGS)
 
+    codex_file = data.get("codex_hooks_file")
+    if codex_file and Path(codex_file).is_file():
+        print("Removing the harness hooks from %s" % codex_file)
+        if write:
+            current = json.loads(Path(codex_file).read_text() or "{}")
+            stripped = install_codex.strip(current, data.get("harness_home", str(home)))
+            Path(codex_file).write_text(json.dumps(stripped, indent=2) + "\n")
+
     if write:
         path.unlink()
         print("\nUninstalled.")
@@ -389,6 +411,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--profile", default=None, choices=list(layer_lib.PROFILES))
     parser.add_argument("--write", action="store_true", help="apply the plan (default is a dry run)")
     parser.add_argument("--uninstall", action="store_true")
+    parser.add_argument("--codex", action="store_true",
+                        help="also install into Codex CLI: ~/.codex/hooks.json and ~/.agents/skills")
     parser.add_argument("--list-layers", action="store_true")
     args = parser.parse_args(argv)
 
@@ -421,6 +445,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     entries, notes = layer_lib.merge_registries(units, profile)
     hooks = build_hooks(entries)
     links = plan_links(units)
+    codex_hooks: Dict[str, List[Dict[str, Any]]] = {}
+    if args.codex:
+        codex_hooks = build_hooks(install_codex.codex_entries(entries))
+        links += install_codex.plan_skill_links(units)
 
     print("Hooks: %d across %d event(s)" % (len(entries), len(hooks)))
     for entry in entries:
@@ -434,6 +462,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         by_kind[link["kind"]] = by_kind.get(link["kind"], 0) + 1
     for kind, count in sorted(by_kind.items()):
         print("  %-10s %d" % (kind, count))
+
+    if args.codex:
+        count = sum(len(b["hooks"]) for blocks in codex_hooks.values() for b in blocks)
+        print("\nCodex: %d hook(s) merged into %s, %d skill link(s) into %s" % (
+            count, install_codex.hooks_file(), sum(1 for l in links if l["kind"] == "codex-skills"),
+            install_codex.skills_dir()))
+        print("  Codex asks you to trust new hooks the first time it sees them.")
 
     if resolved:
         print("\nConfiguration:")
@@ -453,6 +488,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     # so it survives every later run.
     prior = read_manifest(home)
     saved, existed, env_keys = write_settings(hooks, resolved, True)
+    codex_file = prior.get("codex_hooks_file")
+    if args.codex:
+        codex_file = str(write_codex_hooks(codex_hooks, home))
     if prior:
         saved = prior.get("settings_backup", saved)
         existed = prior.get("settings_existed", existed)
@@ -471,6 +509,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             "settings_backup": saved,
             "settings_existed": existed,
             "env_keys": env_keys,
+            "codex_hooks_file": codex_file,
             "links": [],
         },
         True,
@@ -490,6 +529,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             "settings_backup": saved,
             "settings_existed": existed,
             "env_keys": env_keys,
+            "codex_hooks_file": codex_file,
             "links": sorted(known.values(), key=lambda l: l["destination"]),
         },
         True,
@@ -502,6 +542,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         sum(1 for l in links if l.get("state") == "link"), len(applied)))
     for link in blocked:
         print("  skipped %s: %s" % (link["destination"], link["state"]))
+    if args.codex:
+        print("Merged %s into %s; your own Codex hooks are untouched" % (
+            "the harness hooks", codex_file))
     print("Manifest: %s" % manifest)
     print("\nUndo with:  ./install.sh --uninstall --write")
     return 0

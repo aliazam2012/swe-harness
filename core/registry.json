@@ -3,7 +3,7 @@
   "notes": "Core hooks. Path-neutral by contract: a 'command' or an absolute 'script' is rejected by core/lib/layers.py. install.py resolves 'runner' plus 'script' into an absolute command at write time. See core/CONTRACT.md. Profiles: minimal keeps every control that stops a wrong or unsafe write and drops everything whose only job is to add context, record narrative, or drive a pane. standard is the full wiring. strict is standard plus per-call telemetry.",
   "hooks": [
     {
-      "id": "sessionstart-inject",
+      "id": "sessionstart-inject", "codex": true,
       "description": "Creates this session's journal and prints only a real anomaly, so a normal start injects nothing.",
       "event": "SessionStart",
       "matcher": null,
@@ -58,7 +58,7 @@
       "mandatory": false
     },
     {
-      "id": "write-guards",
+      "id": "write-guards", "codex": true,
       "description": "Runs the Write, Edit and MultiEdit guards in one process. config_protection blocks an edit that weakens a linter, formatter or type checker, which CI cannot catch because the config change arrives with the code it excuses and CI then obeys it.",
       "event": "PreToolUse",
       "matcher": "Write|Edit|MultiEdit",
@@ -69,7 +69,7 @@
       "mandatory": false
     },
     {
-      "id": "bash-guards",
+      "id": "bash-guards", "codex": true,
       "description": "Runs the Bash guards in one process. no_verify blocks a git command that switches off the pre-commit and pre-push hooks, which is how an unscanned credential reaches history.",
       "event": "PreToolUse",
       "matcher": "Bash",
@@ -80,7 +80,7 @@
       "mandatory": false
     },
     {
-      "id": "python-lint",
+      "id": "python-lint", "codex": true,
       "description": "Runs ruff, mypy and any configured extra checks after every Python write, and feeds the findings back.",
       "event": "PostToolUse",
       "matcher": "Write|Edit|MultiEdit",
