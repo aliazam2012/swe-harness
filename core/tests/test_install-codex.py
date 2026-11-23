@@ -78,5 +78,32 @@ with tempfile.TemporaryDirectory() as home:
     report("uninstall removes the skill links", not skills.is_dir() or not any(skills.iterdir()),
            sorted(p.name for p in skills.iterdir())[:5] if skills.is_dir() else [])
 
+
+# --codex-only: Codex gets the harness; Claude Code's settings are not touched at all.
+with tempfile.TemporaryDirectory() as home:
+    claude = Path(home, ".claude")
+    claude.mkdir()
+    mine = {"model": "opus", "hooks": {"SessionStart": [{"hooks": [
+        {"type": "command", "command": "bash '/opt/someone-else/hook.sh'", "timeout": 10}]}]}}
+    (claude / "settings.json").write_text(json.dumps(mine, indent=2) + "\n")
+    before = (claude / "settings.json").read_bytes()
+
+    out = run(home, "--codex-only", "--write")
+    report("codex-only install succeeds", out.returncode == 0, out.stderr[-400:] + out.stdout[-400:])
+    report("codex-only leaves Claude settings byte for byte", (claude / "settings.json").read_bytes() == before)
+    report("codex-only links nothing into ~/.claude",
+           not any(p.is_symlink() for p in claude.rglob("*")), sorted(str(p) for p in claude.rglob("*"))[:5])
+    codex_hooks = json.loads(Path(home, ".codex", "hooks.json").read_text())["hooks"]
+    report("codex-only writes the Codex hooks", ("PreToolUse" in codex_hooks), sorted(codex_hooks))
+    skills = Path(home, ".agents", "skills")
+    report("codex-only links the skills", skills.is_dir() and any(skills.iterdir()))
+
+    out = run(home, "--uninstall", "--write")
+    report("uninstall after codex-only succeeds", out.returncode == 0, out.stderr[-400:])
+    report("uninstall leaves Claude settings byte for byte", (claude / "settings.json").read_bytes() == before)
+    left = json.loads(Path(home, ".codex", "hooks.json").read_text())["hooks"]
+    report("uninstall empties the Codex hooks it wrote", left == {}, left)
+    report("uninstall removes the Codex skill links", not any(skills.iterdir()))
+
 print("\n%d passed, %d failed" % (total - fails, fails))
 sys.exit(1 if fails else 0)

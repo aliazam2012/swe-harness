@@ -58,7 +58,7 @@ layers/
 
 ## Codex
 
-`./install.sh --codex --write` also installs into Codex CLI, next to Claude Code:
+`./install.sh --codex --write` also installs into Codex CLI, next to Claude Code; `--codex-only` installs into Codex and leaves Claude Code's settings exactly as they are:
 
 - **Skills** are linked into `~/.agents/skills`, where Codex finds them (same `SKILL.md` format).
 - **Hooks** are merged into `~/.codex/hooks.json` (or `$CODEX_HOME/hooks.json`). Entries you or other tools put there stay as they are; uninstall removes only the harness's own.
