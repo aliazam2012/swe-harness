@@ -17,7 +17,10 @@ jobs:
     # The release gate. Core is meant to be publishable, so a company name or an
     # absolute path reaching core is a build failure, not a review comment.
     name: core purity gate
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: 26.04 has no Python 3.9 build (3.9 is past
+    # end of life), and 3.9 is the floor because macOS ships it. 24.04 still
+    # has one. Revisit when 24.04 retires or the floor moves.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -34,7 +37,7 @@ jobs:
       matrix:
         # 3.9 is the floor the contract promises and the version macOS ships.
         # The newest is there to catch a deprecation before it reaches anyone.
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-24.04, macos-latest]
         python: ['3.9', '3.13']
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-24.04, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
