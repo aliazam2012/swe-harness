@@ -524,11 +524,42 @@ check "and the corpus date range it covered" \
 check "and the harness fingerprint the Stop gate recompares" \
   "$(printf '%s\n' "$STORED" | awk '/^sha/{print $2}')" "True"
 
-OUT=$(bench --runs 5 --no-store --only dispatcher --compare last); EXIT=$?
+# The live comparison proves the report's shape, not its verdict. Its exit code
+# is wall-clock timing on whatever machine runs this: at 5 runs a quiet stored
+# run against a second run that meets a burst of load flags an unchanged hook
+# (11 of 12 tries with load on the second run only, 0 of 12 with none), which is
+# what failed on a shared macOS runner. So the verdict is checked on recorded
+# runs, where the timing cannot move between the two sides.
+OUT=$(bench --runs 5 --no-store --only dispatcher --compare last)
 has "compare prints a delta table" "$OUT" "was"
 has "compare names the run it compared against" "$OUT" "compare:"
 has "compare reports the per-turn change" "$OUT" "per turn:"
-check "an unchanged run exits clean" "$EXIT" "0"
+
+VERDICT=$("$PY" - "$SCRIPTS/harness-bench.py" "$STORE" <<'PY'
+import contextlib, copy, importlib.util, io, json, sys
+spec = importlib.util.spec_from_file_location("harness_bench", sys.argv[1])
+bench = importlib.util.module_from_spec(spec)
+# Registered before it runs: its dataclasses look their module up by name.
+sys.modules[spec.name] = bench
+spec.loader.exec_module(bench)
+with open(sys.argv[2]) as fh:
+    before = json.loads(fh.read().splitlines()[-1])
+
+def verdict(factor):
+    now = copy.deepcopy(before)
+    now["run_id"] = before["run_id"] + "-now"
+    for row in now["scenarios"]:
+        row["stats"]["p50"] *= factor
+    with contextlib.redirect_stdout(io.StringIO()):
+        return bench.compare(now, before, bench.DEFAULT_THRESHOLD_PCT)
+
+print("unchanged", verdict(1.0))
+print("inside", verdict(1.2))
+PY
+)
+vd() { printf '%s\n' "$VERDICT" | awk -v k="$1" '$1 == k {print $2}'; }
+check "an unchanged run exits clean" "$(vd unchanged)" "0"
+check "and so does a drift inside the threshold" "$(vd inside)" "0"
 
 # Slow the hook down far past the threshold and the gate must fail the run.
 cat > "$HOOKS/pretooluse-dispatcher.py" <<'HOOKEOF'
