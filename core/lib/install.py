@@ -311,6 +311,44 @@ def write_codex_hooks(codex_hooks: Dict[str, List[Dict[str, Any]]], home: Path) 
     return target
 
 
+def install_codex_only(
+    home: Path,
+    units: List[layer_lib.Unit],
+    profile: str,
+    codex_hooks: Dict[str, List[Dict[str, Any]]],
+    links: List[Dict[str, str]],
+) -> int:
+    """Install into Codex alone. Claude Code's settings.json and ~/.claude are not touched.
+
+    The manifest keeps whatever an earlier install recorded and adds the Codex
+    parts, so one uninstall still undoes everything this harness owns.
+    """
+    prior = read_manifest(home)
+    codex_file = str(write_codex_hooks(codex_hooks, home))
+    codex_links = [l for l in links if l["kind"] == "codex-skills"]
+    applied = apply_links(codex_links, True)
+    known = {l["destination"]: l for l in prior.get("links", [])}
+    for link in applied:
+        known[link["destination"]] = link
+    data = dict(prior) if prior else {
+        "harness_home": str(home),
+        "units": [u.name for u in units],
+        "profile": profile,
+        "settings_backup": None,
+        "settings_existed": True,  # never ours to remove
+        "env_keys": [],
+    }
+    data["installed_at"] = STAMP
+    data["codex_hooks_file"] = codex_file
+    data["links"] = sorted(known.values(), key=lambda l: l["destination"])
+    manifest = record_manifest(home, data, True)
+    print("\nMerged the harness hooks into %s; your own Codex hooks are untouched" % codex_file)
+    print("Linked %d skill(s) for Codex; Claude Code settings left as they are" % len(applied))
+    print("Manifest: %s" % manifest)
+    print("\nUndo with:  ./install.sh --uninstall --write")
+    return 0
+
+
 def read_manifest(home: Path) -> Dict[str, Any]:
     path = cfg.workspace(home) / MANIFEST_NAME
     if not path.is_file():
@@ -413,6 +451,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--uninstall", action="store_true")
     parser.add_argument("--codex", action="store_true",
                         help="also install into Codex CLI: ~/.codex/hooks.json and ~/.agents/skills")
+    parser.add_argument("--codex-only", action="store_true",
+                        help="install into Codex CLI only; Claude Code settings and links are left alone")
     parser.add_argument("--list-layers", action="store_true")
     args = parser.parse_args(argv)
 
@@ -423,6 +463,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.uninstall:
         return uninstall(home, args.write)
+    if args.codex_only:
+        args.codex = True
 
     selected = [name for name in args.layers.split(",") if name.strip()]
     units = layer_lib.discover(home, selected)
@@ -469,6 +511,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             count, install_codex.hooks_file(), sum(1 for l in links if l["kind"] == "codex-skills"),
             install_codex.skills_dir()))
         print("  Codex asks you to trust new hooks the first time it sees them.")
+        if args.codex_only:
+            print("  --codex-only: Claude Code settings and ~/.claude links are not touched.")
 
     if resolved:
         print("\nConfiguration:")
@@ -482,6 +526,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("\nDry run. Nothing was changed.")
         print("Apply with:  ./install.sh%s --write" % (" --layers " + args.layers if args.layers else ""))
         return 0
+
+    if args.codex_only:
+        return install_codex_only(home, units, profile, codex_hooks, links)
 
     # An earlier manifest holds the only record of what this machine looked
     # like before the harness touched it. That is what uninstall must restore,
