@@ -121,6 +121,7 @@ generates `~/.claude/settings.json` from the result. **A registry never contains
 | `script` | Path relative to the owning unit's root. Never absolute |
 | `profiles` | Which of `minimal`, `standard`, `strict` include this hook |
 | `mandatory` | A profile or a `--disable` flag cannot drop it |
+| `codex` | `true` when the hook also works on Codex CLI; `./install.sh --codex` installs only these, with `Write\|Edit\|MultiEdit` matched as `apply_patch` |
 
 The installer resolves `runner` plus `script` into an absolute command at write time. This is the
 single reason a clone works on someone else's machine, so nothing may reintroduce a stored path.

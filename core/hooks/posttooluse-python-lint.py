@@ -75,37 +75,59 @@ def main() -> None:
         emit(False)
         return
 
-    tool_input = data.get("tool_input") or {}
-    path = tool_input.get("file_path") or tool_input.get("path") or ""
-    if not isinstance(path, str) or not path.endswith(".py") or not os.path.exists(path):
+    paths = python_paths(data)
+    if not paths:
         emit(False)
         return
 
-    findings = []
-    if shutil.which("ruff"):
-        code, out = run(["ruff", "check", path])
-        if code != 0 and out:
-            findings.append("ruff:\n" + out)
-    if shutil.which("mypy"):
-        code, out = run(["mypy", path])
-        if code != 0 and out:
-            findings.append("mypy:\n" + out)
-    runner = checks_runner()
-    if runner and os.path.exists(runner):
-        code, out = run([sys.executable, runner, path])
-        if code != 0 and out:
-            findings.append("project-checks:\n" + out)
+    reports = []
+    for path in paths:
+        findings = []
+        if shutil.which("ruff"):
+            code, out = run(["ruff", "check", path])
+            if code != 0 and out:
+                findings.append("ruff:\n" + out)
+        if shutil.which("mypy"):
+            code, out = run(["mypy", path])
+            if code != 0 and out:
+                findings.append("mypy:\n" + out)
+        runner = checks_runner()
+        if runner and os.path.exists(runner):
+            code, out = run([sys.executable, runner, path])
+            if code != 0 and out:
+                findings.append("project-checks:\n" + out)
+        if findings:
+            reports.append(
+                "Python standard violations in "
+                + os.path.basename(path)
+                + " (fix before continuing):\n\n"
+                + "\n\n".join(findings)
+            )
 
-    if findings:
-        emit(
-            BLOCK_ON_ERROR,
-            "Python standard violations in "
-            + os.path.basename(path)
-            + " (fix before continuing):\n\n"
-            + "\n\n".join(findings),
-        )
+    if reports:
+        emit(BLOCK_ON_ERROR, "\n\n".join(reports))
     else:
         emit(False)
+
+
+def python_paths(data: dict) -> list[str]:
+    """Every existing .py file the call wrote: one for a Claude edit, any number for a Codex patch."""
+    from codex_patch import as_claude_calls  # noqa: PLC0415 - only when there is a call to read
+
+    found = []
+    for call in as_claude_calls(data):
+        tool_input = call.get("tool_input") or {}
+        if not isinstance(tool_input, dict):
+            continue
+        path = tool_input.get("file_path") or tool_input.get("path") or ""
+        if not isinstance(path, str) or not path.endswith(".py"):
+            continue
+        if not os.path.isabs(path):
+            path = os.path.join(str(data.get("cwd") or os.getcwd()), path)
+        path = os.path.normpath(path)
+        if os.path.exists(path) and path not in found:
+            found.append(path)
+    return found
 
 
 if __name__ == "__main__":

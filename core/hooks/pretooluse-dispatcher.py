@@ -48,18 +48,24 @@ def deny(reason: str) -> None:
 
 
 def verdict(payload: dict[str, Any]) -> str | None:
-    """Run the guards for this tool and return the first refusal, or None."""
+    """Run the guards for this tool and return the first refusal, or None.
+
+    A Codex apply_patch call is first split into the Write and MultiEdit calls
+    it stands for, so the same guards judge every file it touches.
+    """
+    from codex_patch import as_claude_calls  # noqa: PLC0415 - paid once, here
     from guards import BASH_GUARDS, GUARDS  # noqa: PLC0415 - paid once, here
 
-    selected = BASH_GUARDS if payload.get("tool_name") == "Bash" else GUARDS
-    for guard in selected:
-        # A guard that raises is skipped, not fatal: the ones after it still run.
-        try:
-            reason = guard(payload)
-        except Exception:
-            reason = None
-        if reason:
-            return reason
+    for call in as_claude_calls(payload):
+        selected = BASH_GUARDS if call.get("tool_name") == "Bash" else GUARDS
+        for guard in selected:
+            # A guard that raises is skipped, not fatal: the ones after it still run.
+            try:
+                reason = guard(call)
+            except Exception:
+                reason = None
+            if reason:
+                return reason
     return None
 
 
